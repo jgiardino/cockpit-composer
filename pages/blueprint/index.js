@@ -20,6 +20,8 @@ import EmptyState from "../../components/EmptyState/EmptyState";
 import BlueprintToolbar from "../../components/Toolbar/BlueprintToolbar";
 import ListView from "../../components/ListView/ListView";
 import ListItemImages from "../../components/ListView/ListItemImages";
+import ImagesDataList from "../../components/ListView/ImagesDataList";
+import ImagesDataListItem from "../../components/ListView/ImagesDataListItem";
 import TextInlineEdit from "../../components/Form/TextInlineEdit";
 import {
   fetchingBlueprintContents,
@@ -563,17 +565,29 @@ class BlueprintPage extends React.Component {
                   <CreateImage blueprint={blueprint} layout={this.layout} />
                 </EmptyState>
               )) || (
-                <ListView className="cmpsr-images" stacked>
-                  {composeList.map(compose => (
-                    <ListItemImages
-                      listItemParent="cmpsr-images"
-                      blueprint={this.props.route.params.blueprint}
-                      listItem={compose}
-                      downloadUrl={this.downloadUrl(compose)}
-                      key={compose.id}
-                    />
-                  ))}
-                </ListView>
+                <>
+                  <ListView className="cmpsr-images" stacked>
+                    {composeList.map(compose => (
+                      <ListItemImages
+                        listItemParent="cmpsr-images"
+                        blueprint={this.props.route.params.blueprint}
+                        listItem={compose}
+                        downloadUrl={this.downloadUrl(compose)}
+                        key={compose.id}
+                      />
+                    ))}
+                  </ListView>
+                  <ImagesDataList>
+                    {composeList.map(compose => (
+                      <ImagesDataListItem
+                        blueprint={this.props.route.params.blueprint}
+                        listItem={compose}
+                        downloadUrl={this.downloadUrl(compose)}
+                        key={compose.id}
+                      />
+                    ))}
+                  </ImagesDataList>
+                </>
               )}
             </div>
           </Tab>

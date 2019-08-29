@@ -3,6 +3,7 @@ const webpack = require("webpack");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CleanWebpackPlugin = require("clean-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const babelConfig = require("./babel.config");
 
 const [mode, devtool] =
@@ -42,6 +43,10 @@ const plugins = [
   // avoid multi chunks for every index.js inside pages folder
   new webpack.optimize.LimitChunkCountPlugin({
     maxChunks: 1
+  }),
+  new MiniCssExtractPlugin({
+    filename: "[name].css",
+    chunkFilename: "[name].bundle.css"
   })
 ];
 
@@ -95,7 +100,26 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"]
+        include: [
+          path.resolve(__dirname, "./pages"),
+          path.resolve(__dirname, "node_modules/patternfly"),
+          path.resolve(__dirname, "node_modules/@patternfly/patternfly"),
+          path.resolve(__dirname, "node_modules/@patternfly/react-styles/css"),
+          path.resolve(__dirname, "node_modules/@patternfly/react-core/dist/styles/base.css"),
+          path.resolve(__dirname, "node_modules/@patternfly/react-core/dist/esm/@patternfly/patternfly"),
+          path.resolve(__dirname, "node_modules/@patternfly/react-core/node_modules/@patternfly/react-styles/css")
+        ],
+        use: [MiniCssExtractPlugin.loader, "css-loader"]
+      },
+      {
+        test: /\.(svg|ttf|eot|woff|woff2)$/,
+        use: {
+          loader: "file-loader"
+        }
+      },
+      {
+        test: /\.(jpg)$/i,
+        loader: "url-loader"
       }
     ]
   }
