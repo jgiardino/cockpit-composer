@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import { connect } from "react-redux";
 import {
   Button,
+  DropdownItem,
   DataListItem,
   DataListItemRow,
   DataListCell,
@@ -11,6 +12,7 @@ import {
   DataListContent,
   DataListItemCells
 } from "@patternfly/react-core";
+import { BuilderImageIcon, ServiceIcon } from "@patternfly/react-icons";
 import { deletingCompose, cancellingCompose } from "../../core/actions/composes";
 import {
   setModalStopBuildVisible,
@@ -18,9 +20,11 @@ import {
   setModalDeleteImageVisible,
   setModalDeleteImageState
 } from "../../core/actions/modals";
+import ImagesDataList from "./ImagesDataList";
+import ActionsDropdown from "../Dropdown/ActionsDropdown";
 import * as composer from "../../core/composer";
 
-class ListItemImages extends React.Component {
+class ImagesDataListItem extends React.Component {
   constructor() {
     super();
     this.state = { logsExpanded: false, uploadsExpanded: false };
@@ -57,6 +61,7 @@ class ListItemImages extends React.Component {
   }
 
   handleLogsShow() {
+    this.setState({ uploadsExpanded: false });
     this.setState(prevState => ({ logsExpanded: !prevState.logsExpanded, fetchingLogs: !prevState.logsExpanded }));
     composer.getComposeLog(this.props.listItem.id).then(
       logs => {
@@ -71,6 +76,7 @@ class ListItemImages extends React.Component {
     );
   }
   handleUploadsShow() {
+    this.setState({ logsExpanded: false });
     this.setState(prevState => ({ uploadsExpanded: !prevState.uploadsExpanded }));
   }
 
@@ -81,7 +87,40 @@ class ListItemImages extends React.Component {
     let status;
     switch (listItem.queue_status) {
       case "WAITING":
-        status = <FormattedMessage defaultMessage="Pending" />;
+        status = (
+          <>
+            <span className="pficon pficon-pending" aria-hidden="true" />
+            {` `}
+            <FormattedMessage defaultMessage="Image build pending" />
+          </>
+        );
+        break;
+      case "RUNNING":
+        status = (
+          <>
+            <span className="pficon pficon-in-progress" aria-hidden="true" />
+            {` `}
+            <FormattedMessage defaultMessage="Image build in progress" />
+          </>
+        );
+        break;
+      case "FINISHED":
+        status = (
+          <>
+            <span className="pficon pficon-ok" aria-hidden="true" />
+            {` `}
+            <FormattedMessage defaultMessage="Image build complete" />
+          </>
+        );
+        break;
+      case "FAILED":
+        status = (
+          <>
+            <span className="pficon pficon-error-circle-o" aria-hidden="true" />
+            {` `}
+            <FormattedMessage defaultMessage="Image build failed" />
+          </>
+        );
         break;
       default:
         status = <p>other status</p>;
@@ -100,11 +139,22 @@ class ListItemImages extends React.Component {
             <FormattedMessage defaultMessage="Loading log messages" />
           </div>
         );
-      } else logsSection = <pre>{this.state.logsContent}</pre>;
+      } else logsSection = <pre className="pf-u-m-0">{this.state.logsContent}</pre>;
     }
-
+    const actions = [
+      this.props.listItem.queue_status === "FINISHED" && (
+        <DropdownItem key="download" component="a" href={this.props.downloadUrl} download tabIndex="0">
+          <FormattedMessage defaultMessage="Download" />
+        </DropdownItem>
+      ),
+      this.props.listItem.queue_status === "FINISHED" && (
+        <button key="delete" className="pf-c-dropdown__menu-item" type="button">
+          Action
+        </button>
+      )
+    ];
     return (
-      <DataListItem>
+      <DataListItem isExpanded={this.state.uploadsExpanded}>
         <DataListItemRow>
           <DataListToggle
             onClick={this.handleUploadsShow}
@@ -112,33 +162,77 @@ class ListItemImages extends React.Component {
             id="ex-toggle1"
             aria-controls="ex-expand1"
           />
+          <div className="cc-c-data-list__item-icon">
+            <BuilderImageIcon />
+          </div>
           <DataListItemCells
             dataListCells={[
-              <DataListCell key="primary content">
+              <DataListCell key="blueprint">
                 <strong id="ex-item3a">
                   {this.props.blueprint}-{listItem.version}-{listItem.compose_type}
                 </strong>
               </DataListCell>,
-              <DataListCell key="secondary content">
+              <DataListCell key="type">
                 <span>Type</span> <strong>{listItem.compose_type}</strong>
               </DataListCell>,
-              <DataListCell key="secondary content">
+              <DataListCell key="date">
                 <span>Created</span> <strong>{formattedTime}</strong>
               </DataListCell>
             ]}
           />
           <div className="cc-c-data-list__item-status">{status}</div>
           <div className="pf-c-data-list__item-action">
-            {listItem.queue_status === "FINISHED" && (
-              <Button component="a" href={this.props.downloadUrl} download role="button">
-                <FormattedMessage defaultMessage="Download" />
-              </Button>
-            )}
+            <ActionsDropdown dropdownItems={actions} />
           </div>
-          <div className="pf-c-data-list__item-action">{logsButton}</div>
+          <div
+            aria-hidden={!this.props.listItem.queue_status === "WAITING"}
+            className={`pf-c-data-list__item-action ${
+              this.props.listItem.queue_status === "WAITING" ? "cc-u-not-visible" : ""
+            }`}
+          >
+            {logsButton}
+          </div>
         </DataListItemRow>
         <DataListContent aria-label="Uploads" id="ex-expand1" isHidden={!this.state.uploadsExpanded} noPadding>
-          <p>Uploads would be listed here</p>
+          <ImagesDataList listLevel="2" fullWidth>
+            <DataListItem>
+              <DataListItemRow>
+                <DataListToggle aria-hidden="true" />
+                <div className="cc-c-data-list__item-icon">
+                  <ServiceIcon />
+                </div>
+                <DataListItemCells
+                  dataListCells={[
+                    <DataListCell key="blueprint">
+                      <strong id="ex-item3a">Type of upload</strong>
+                    </DataListCell>,
+                    <DataListCell key="date">
+                      <span>Started</span> <strong>{formattedTime}</strong>
+                    </DataListCell>
+                  ]}
+                />
+                <div className="cc-c-data-list__item-status">
+                  <span className="pficon pficon-ok" aria-hidden="true" />
+                  {` `}
+                  <FormattedMessage defaultMessage="Upload action complete" />
+                </div>
+                <div className="pf-c-data-list__item-action">
+                  <ActionsDropdown dropdownItems={actions} />
+                </div>
+                <div
+                  aria-hidden={!this.props.listItem.queue_status === "WAITING"}
+                  className={`pf-c-data-list__item-action ${
+                    this.props.listItem.queue_status === "WAITING" ? "cc-u-not-visible" : ""
+                  }`}
+                >
+                  {logsButton}
+                </div>
+              </DataListItemRow>
+              <DataListContent aria-label="Logs" id="ex-expand1" isHidden={!this.state.logsExpanded} noPadding>
+                {logsSection}
+              </DataListContent>
+            </DataListItem>
+          </ImagesDataList>
         </DataListContent>
         <DataListContent aria-label="Logs" id="ex-expand1" isHidden={!this.state.logsExpanded} noPadding>
           {logsSection}
@@ -148,7 +242,7 @@ class ListItemImages extends React.Component {
   }
 }
 
-ListItemImages.propTypes = {
+ImagesDataListItem.propTypes = {
   listItem: PropTypes.shape({
     blueprint: PropTypes.string,
     compose_type: PropTypes.string,
@@ -170,7 +264,7 @@ ListItemImages.propTypes = {
   downloadUrl: PropTypes.string
 };
 
-ListItemImages.defaultProps = {
+ImagesDataListItem.defaultProps = {
   listItem: {},
   blueprint: "",
   deletingCompose: function() {},
@@ -206,4 +300,4 @@ const mapDispatchToProps = dispatch => ({
 export default connect(
   null,
   mapDispatchToProps
-)(ListItemImages);
+)(ImagesDataListItem);

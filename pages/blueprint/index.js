@@ -577,7 +577,7 @@ class BlueprintPage extends React.Component {
                       />
                     ))}
                   </ListView>
-                  <ImagesDataList>
+                  <ImagesDataList fullWidth>
                     {composeList.map(compose => (
                       <ImagesDataListItem
                         blueprint={this.props.route.params.blueprint}
